@@ -21,9 +21,9 @@ export const SOUND_SOURCES: Record<SoundChoice, string[]> = {
   white: ["/noise/White.mp3"],
 
   lofi: [
-    "/lofi/lofi1.mp3",
-    "/lofi/lofi2.mp3",
-    "/lofi/lofi3.mp3",
+    '/timeblind/lofi/lofi1.mp3',
+    '/timeblind/lofi/lofi2.mp3',
+    '/timeblind/lofi/lofi3.mp3',
   ],
 
   silence: [],
