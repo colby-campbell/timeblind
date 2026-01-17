@@ -1,11 +1,19 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
+type TimerProps = {
+  onStart: () => void
+  onPause: () => void
+  onStop: () => void
+}
+
+
 function formatTime(totalSeconds: number) {
   const m = Math.floor(totalSeconds / 60)
   const s = totalSeconds % 60
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
 }
+
 
 type Mode = "focus" | "break"
 
@@ -15,7 +23,7 @@ function getStoredMinutes(key: "focusMinutes" | "breakMinutes", fallback: number
     return Number.isFinite(n) && n > 0 ? n : fallback
 }
 
-function Timer() {
+function Timer({ onStart, onPause, onStop }: TimerProps) {
   const navigate = useNavigate()
 
   //25 and 5 default settings for now
@@ -25,7 +33,9 @@ function Timer() {
   //focus mode
   const [mode, setMode] = useState<Mode>("focus")
   const [secondsLeft, setSecondsLeft] = useState<number>(() => focusMinutes * 60)
+
   const [running, setRunning] = useState<boolean>(false)
+
   const intervalRef = useRef<number | null>(null)
 
     useEffect(() => {
@@ -38,6 +48,7 @@ function Timer() {
     setRunning(false)
   }, [])
 
+  // Handle timer ticking
   useEffect(() => {
     if (!running) return
 
@@ -53,8 +64,15 @@ function Timer() {
     }
   }, [running])
 
+  // Stop timer + music when time reaches 0
   useEffect(() => {
-      if (secondsLeft !== 0) return
+    if (secondsLeft === 0 && intervalRef.current) {
+      clearInterval(intervalRef.current)
+      intervalRef.current = null
+      setRunning(false)
+      onStop()
+    }
+  }, [secondsLeft, onStop])
 
       // stop current interval to avoid double timers
       if (intervalRef.current) {
@@ -72,7 +90,20 @@ function Timer() {
       setRunning((r) => r)
   }, [secondsLeft, mode, focusMinutes, breakMinutes])
 
-  const toggle = () => setRunning((r) => !r)
+  const toggle = () => {
+  setRunning((r) => {
+    const next = !r
+
+    if (next) {
+      onStart()   // resume / start
+    } else {
+      onPause()   // pause ONLY
+    }
+
+    return next
+  })
+}
+
 
   const reset = () => {
     if (intervalRef.current) {
@@ -82,6 +113,7 @@ function Timer() {
     setRunning(false)
     setMode("focus")
     setSecondsLeft(focusMinutes * 60)
+    onStop() // 🔇 stop music
   }
 
   const label = mode === "focus" ? "Focus" : "Break"
@@ -112,10 +144,22 @@ function Timer() {
       </header>
 
       <section className="timer__display" aria-live="polite">
-        <div className="time" data-testid="time-output">{formatTime(secondsLeft)}</div>
+        <div className="time">{formatTime(secondsLeft)}</div>
       </section>
 
       <section className="timer__controls">
+        <div className="control-row">
+          <label htmlFor="minutes">Minutes</label>
+          <input
+            id="minutes"
+            type="number"
+            min={0}
+            value={inputMinutes}
+            onChange={(e) => setInputMinutes(e.target.value)}
+          />
+          <button className="btn" onClick={handleSet}>Set</button>
+        </div>
+
         <div className="control-row">
           <button className="btn btn-primary" onClick={toggle}>
             {running ? 'Pause' : 'Start'}
