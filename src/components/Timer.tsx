@@ -7,18 +7,44 @@ function formatTime(totalSeconds: number) {
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
 }
 
+type Mode = "focus" | "break"
+
+function getStoredMinutes(key: "focusMinutes" | "breakMinutes", fallback: number){
+    const raw = localStorage.getItem(key)
+    const n = Math.floor(Number(raw))
+    return Number.isFinite(n) && n > 0 ? n : fallback
+}
+
 function Timer() {
   const navigate = useNavigate()
-  const [inputMinutes, setInputMinutes] = useState<string>('25')
-  const [secondsLeft, setSecondsLeft] = useState<number>(25 * 60)
+
+  //25 and 5 default settings for now
+  const [focusMinutes, setFocusMinutes] = useState<number>(() => getStoredMinutes("focusMinutes", 25))
+  const [breakMinutes, setBreakMinutes] = useState<number>(() => getStoredMinutes("breakMinutes", 5))
+
+  //focus mode
+  const [mode, setMode] = useState<Mode>("focus")
+  const [secondsLeft, setSecondsLeft] = useState<number>(() => focusMinutes * 60)
   const [running, setRunning] = useState<boolean>(false)
   const intervalRef = useRef<number | null>(null)
 
+    useEffect(() => {
+    const f = getStoredMinutes("focusMinutes", 25)
+    const b = getStoredMinutes("breakMinutes", 5)
+    setFocusMinutes(f)
+    setBreakMinutes(b)
+    setMode("focus")
+    setSecondsLeft(f * 60)
+    setRunning(false)
+  }, [])
+
   useEffect(() => {
     if (!running) return
+
     intervalRef.current = window.setInterval(() => {
       setSecondsLeft((prev) => (prev > 0 ? prev - 1 : 0))
     }, 1000)
+
     return () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current)
@@ -28,28 +54,41 @@ function Timer() {
   }, [running])
 
   useEffect(() => {
-    if (secondsLeft === 0 && intervalRef.current) {
-      clearInterval(intervalRef.current)
-      intervalRef.current = null
-      setRunning(false)
-    }
-  }, [secondsLeft])
+      if (secondsLeft !== 0) return
 
-  const handleSet = () => {
-    const mins = Math.max(0, Math.floor(Number(inputMinutes) || 0))
-    setSecondsLeft(mins * 60)
-  }
+      // stop current interval to avoid double timers
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current)
+        intervalRef.current = null
+      }
+
+      const nextMode: Mode = mode === "focus" ? "break" : "focus"
+      setMode(nextMode)
+
+      const nextSeconds = (nextMode === "focus" ? focusMinutes : breakMinutes) * 60
+      setSecondsLeft(nextSeconds)
+
+      // keep running if the user had started it
+      setRunning((r) => r)
+  }, [secondsLeft, mode, focusMinutes, breakMinutes])
 
   const toggle = () => setRunning((r) => !r)
+
   const reset = () => {
-    const mins = Math.max(0, Math.floor(Number(inputMinutes) || 0))
-    setSecondsLeft(mins * 60)
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current)
+      intervalRef.current = null
+    }
     setRunning(false)
+    setMode("focus")
+    setSecondsLeft(focusMinutes * 60)
   }
+
+  const label = mode === "focus" ? "Focus" : "Break"
 
   return (
     <main className="timer">
-      {/* corner button */}
+      {/* settings button */}
       <button
         className="settings-btn"
         onClick={() => navigate('/settings')}
@@ -57,8 +96,19 @@ function Timer() {
       >
         ⚙️
       </button>
+
+       {/* info button */}
+      <button
+        className="info-btn"
+        onClick={() => navigate('/info')}
+        aria-label="Open info page"
+      >
+        💡
+      </button>
+
       <header className="timer__header">
         <h1>timeblind</h1>
+        <div aria-label="current mode" style={{ opacity: 0.8 }}>{label}</div>
       </header>
 
       <section className="timer__display" aria-live="polite">
@@ -67,26 +117,19 @@ function Timer() {
 
       <section className="timer__controls">
         <div className="control-row">
-          <label htmlFor="minutes">Minutes</label>
-          <input
-            id="minutes"
-            type="number"
-            min={0}
-            value={inputMinutes}
-            onChange={(e) => setInputMinutes(e.target.value)}
-          />
-          <button className="btn" onClick={handleSet}>Set</button>
-        </div>
-        <div className="control-row">
           <button className="btn btn-primary" onClick={toggle}>
             {running ? 'Pause' : 'Start'}
           </button>
           <button className="btn" onClick={reset}>Reset</button>
         </div>
+
+        <small style={{ opacity: 0.75 }}>
+          Focus: {focusMinutes}m • Break: {breakMinutes}m
+        </small>
       </section>
 
       <footer className="timer__footer">
-        <small>Tip: Use Set to apply changes before starting.</small>
+        <small>Tip: Adjust durations in Settings.</small>
       </footer>
     </main>
   )
