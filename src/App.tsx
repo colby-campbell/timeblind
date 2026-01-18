@@ -12,7 +12,7 @@ function App() {
   const audioRef = useRef<HTMLAudioElement>(null)
 
   // Hard-coded choice for now
-  const choice: SoundChoice = "rain"
+  const choice: SoundChoice = "pink"
 
   // Initialize queue from choice
   const [queue, setQueue] = useState<string[]>(() => [

@@ -1,4 +1,4 @@
-export type MusicCategory = 'lofi'
+
 
 
 export type SoundChoice =
@@ -12,13 +12,13 @@ export type SoundChoice =
   | "white"
 
 export const SOUND_SOURCES: Record<SoundChoice, string[]> = {
-  rain: ["/misc sound/rain.mp3"],
-  ocean: ["/misc sound/waves.mp3"],
-  campfire: ["/misc sound/fireplace.mp3"],
+  rain: ["/timeblind/misc/rain.mp3"],
+  ocean: ["/timeblind/misc/waves.mp3"],
+  campfire: ["/timeblind/misc/fireplace.mp3"],
 
-  brown: ["/noise/Brown.mp3"],
-  pink: ["/noise/Pink.mp3"],
-  white: ["/noise/White.mp3"],
+  brown: ["/timeblind/noise/Brown.mp3"],
+  pink: ["/timeblind/noise/Pink.mp3"],
+  white: ["/timeblind/noise/White.mp3"],
 
   lofi: [
     '/timeblind/lofi/lofi1.mp3',
